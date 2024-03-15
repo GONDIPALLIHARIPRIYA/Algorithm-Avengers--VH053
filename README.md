@@ -1,4 +1,4 @@
-![image](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/beb61c15-8bb1-4c98-a5d2-0d1b5207486f)***Algorithm-Avengers--VH053**
+***Algorithm-Avengers--VH053**
 ***Title:** "Streamlit Based Stock Forecasting Dashboard"
 **Description:** Stock price prediction is a stimulating and principal task for
 investors and traders in financial markets. In this project, we
@@ -62,9 +62,8 @@ stock price prediction.we have analyzed the other conventional time-series model
 ARIMA compared with our model's performance and
 found that our LSTM model performed well.
 **3-5 Images :**
-![Screenshot 2024-03-15 232722](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/12a824e0-47a2-472d-9f6f-463557776086)
+![Screenshot 2024-03-15 233301](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/864df978-f7ad-4875-a7b3-35457ea9fcf8) 
 ![Screenshot 2024-03-15 232959](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/8feed9b9-93eb-4461-be8d-147a4ae9689b)
-![Screenshot 2024-03-15 233301](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/864df978-f7ad-4875-a7b3-35457ea9fcf8)
 ![Screenshot 2024-03-15 233355](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/0f4973b1-7583-4c17-b7fb-9e50cbb4d9dc)
 ![Screenshot 2024-03-15 233648](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/da637494-e1a3-4935-ab5d-54c13b941703)
 ![Screenshot 2024-03-15 233832](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/279da901-a3e6-4c7f-86df-779d12f975b7)
