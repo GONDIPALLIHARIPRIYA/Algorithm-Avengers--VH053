@@ -29,7 +29,7 @@ supported.
   GONDIPALLI  HARI PRYA- gondipalliharipriya@gmail.com
   SHAIK REENA-shaikreena2003@gmail.com
   KORRAPATI MAHENDRA SUNNY GOUD-9921004365@klu.ac.in
-  A SREERAM SAGAR -92100477@klu.ac.in
+  A SREERAM SAGAR -9921004977@klu.ac.in
   **The problem it solves:**
   It's a  user-friendly interface for users to access and
 analyze stock data is provided by the system. To access a
