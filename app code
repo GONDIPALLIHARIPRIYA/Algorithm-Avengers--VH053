@@ -1,0 +1,593 @@
+import streamlit as st
+from streamlit_option_menu import option_menu
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import pandas_datareader as data
+from keras.models import load_model
+import yfinance as yf
+import ta
+from ta.trend import adx
+import base64
+from datetime import date
+import plotly.graph_objs as go
+from datetime import datetime, timedelta
+from textblob import TextBlob
+from newsapi import NewsApiClient
+import math
+import tensorflow as tf
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
+
+with st.sidebar:
+    
+    selected_option = option_menu('Stock Hub',
+                          
+                          ['Stock Price Prediction',
+                           'Stock News',
+                           'Stock Price Comparison',
+                           'Stock Technical Indicators',
+                           'Download Stock Data',
+                           'Stock Revenue Calculator'],
+                          icons=['bookmark tags','newspaper','link','gear','download','calculator'],
+                          default_index=0)
+# Set the title and add a heading
+st.title("Stock Hub...!!!")
+# Get today's date
+
+# Display content based on the selected option
+if selected_option == "Stock Price Prediction":
+    st.title("Stock Price Prediction")
+    today = date.today()
+    stock_list = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "JPM", "JNJ", "NVDA", "V", "NFLX", "AMD", "PYPL", "BAC", "GC", "XOM", "BP", "CVX", "T", "VZ", "TMUS", "DIS", "CRM", "ORCL", "IBM", "GE", "BA", "LUV", "DAL", "AAL", "UBER", "LYFT", "SBUX", "MCD", "KO", "PEP", "WMT", "TGT", "AMT", "PLD", "PSA", "SPG", "INTC", "CSCO", "QCOM", "TXN", "BABA", "PDD", "BIDU", "NTES", "CRM", "SAP", "ASML", "TM", "HMC", "NSANY", "TSM", "MU", "LRCX", "KLAC", "AMAT", "XLNX", "MCHP", "CDNS", "MRVL", "SPOT", "PINS", "TWTR", "SNAP", "SHOP", "WIX", "ZM", "DOCU", "CRM", "ZS", "OKTA", "NET", "ESTC", "SPLK", "NOW", "TEAM", "WORK"]
+    # Get user input
+    col1,col2 = st.columns(2)
+    with col1:
+        start = st.date_input("Start date", date(2022, 1, 1), max_value=today)
+    with col2:
+        end = st.date_input("End date", date.today(), max_value=today)
+    # Validate input
+    if start > today or end > today:
+        st.error("Error: Date cannot be in the future. Please enter a valid date.")
+    elif start >= end:
+        st.error("Error: Start date must be before end date. Please enter valid dates.")
+    else:
+        st.success('Start date: `%s`\n\nEnd date:`%s`' % (start, end))
+
+    # Add multi-select input widget to choose stocks
+    user_input = st.selectbox('Select stocks to analyze', stock_list)
+    df = yf.download(user_input, start=start, end=end)
+    st.subheader(f'Data description from {start.strftime("%Y-%m-%d")} to {end.strftime("%Y-%m-%d")} of {user_input} Stock..!')
+    st.write(df.describe())
+    # Create trace for closing price vs time
+    trace1 = go.Scatter(x=df.index, y=df.Close, mode='lines', name='Close')
+
+    # Create layout for the chart
+    layout = go.Layout(title='Closing Price vs Time',
+                    xaxis=dict(title='Time'),
+                    yaxis=dict(title='Closing Price'))
+
+    # Create Plotly figure and display it
+    fig = go.Figure(data=[trace1], layout=layout)
+    st.plotly_chart(fig)
+
+    # Create trace for candlestick chart
+    trace1 = go.Candlestick(x=df.index,
+                            open=df['Open'],
+                            high=df['High'],
+                            low=df['Low'],
+                            close=df['Close'],
+                            name='Price')
+
+    # Create layout for the chart
+    layout = go.Layout(title='Candlestick Chart',
+                    xaxis=dict(title='Time'),
+                    yaxis=dict(title='Price'))
+
+    # Create Plotly figure and display it
+    fig = go.Figure(data=[trace1], layout=layout)
+    st.plotly_chart(fig)
+
+    def download_stock_data(ticker, start_date, end_date):
+        df = yf.download(ticker, start=start_date, end=end_date, progress=False)
+        return df
+
+    # Create sequences for LSTM training
+    def create_sequences(data, sequence_length):
+        sequences = []
+        targets = []
+
+        for i in range(len(data) - sequence_length):
+            seq = data[i:i+sequence_length]
+            target = data[i+sequence_length]
+            sequences.append(seq)
+            targets.append(target)
+
+        return np.array(sequences), np.array(targets)
+
+    # Define the LSTM model
+    def create_lstm_model(input_shape):
+        model = tf.keras.Sequential([
+            tf.keras.layers.LSTM(128, return_sequences=True, input_shape=input_shape),
+            tf.keras.layers.LSTM(128),
+            tf.keras.layers.Dense(32),
+            tf.keras.layers.Dense(1)
+        ])
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        return model
+    
+    # Define LSTM model
+    def create_lstm_model(input_shape):
+        model = tf.keras.Sequential([
+            tf.keras.layers.LSTM(50, return_sequences=True, input_shape=input_shape),
+            tf.keras.layers.LSTM(50, return_sequences=False),
+            tf.keras.layers.Dense(25),
+            tf.keras.layers.Dense(1)
+        ])
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        return model
+
+    # Data preparation and model training
+    scaler = MinMaxScaler()
+    scaled_data = scaler.fit_transform(df['Close'].values.reshape(-1, 1))
+    training_data_len = int(np.ceil( len(scaled_data) * .95 ))
+    train_data = scaled_data[0:int(training_data_len), :]
+    x_train, y_train = [], []
+
+    for i in range(60,len(train_data)):
+        x_train.append(train_data[i-60:i,0])
+        y_train.append(train_data[i,0])
+
+    x_train, y_train = np.array(x_train), np.array(y_train)
+    x_train = np.reshape(x_train, (x_train.shape[0],x_train.shape[1],1))
+
+    model = create_lstm_model((x_train.shape[1], 1))
+    model.fit(x_train, y_train, batch_size=1, epochs=1)
+
+    # Prediction on testing data
+    test_data = scaled_data[training_data_len - 60:, :]
+    x_test = []
+    y_test = df['Close'][training_data_len:].values
+
+    for i in range(60,len(test_data)):
+        x_test.append(test_data[i-60:i,0])
+
+    x_test = np.array(x_test)
+    x_test = np.reshape(x_test, (x_test.shape[0],x_test.shape[1],1))
+
+    predictions = model.predict(x_test)
+    predictions = scaler.inverse_transform(predictions)
+
+    # Create actual vs predicted graph
+    train = df[:training_data_len]
+    valid = df[training_data_len:]
+    valid['Predictions'] = predictions
+
+    # Plot actual vs predicted prices
+    st.subheader('Actual vs Predicted Prices')
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=train.index, y=train['Close'], mode='lines', name='Actual Train Price'))
+    fig.add_trace(go.Scatter(x=valid.index, y=valid['Close'], mode='lines', name='Actual Test Price'))
+    fig.add_trace(go.Scatter(x=valid.index, y=valid['Predictions'], mode='lines', name='Predicted Test Price'))
+    st.plotly_chart(fig)
+
+    # Future price prediction
+    future_days = 7
+    future_dates = pd.date_range(start=end, periods=future_days + 1)
+    last_days = df.tail(60)
+
+    x_future = []
+    x_future.append(last_days['Close'].values.tolist())
+    x_future = np.array(x_future)
+    x_future = np.reshape(x_future, (x_future.shape[0], x_future.shape[1], 1))
+
+    future_predictions = []
+    for i in range(future_days):
+        future_predictions.append(model.predict(x_future)[0])
+        last_days = np.append(last_days, model.predict(x_future)[0])
+        last_days = last_days[1:]
+        x_future = np.array([last_days])
+        x_future = np.reshape(x_future, (x_future.shape[0], x_future.shape[1], 1))
+
+    future_predictions = scaler.inverse_transform(future_predictions)
+
+    # Create table for future price predictions
+    st.subheader('Future Price Predictions for the Next 7 Days')
+    
+    
+
+    future_df = pd.DataFrame({'Date': future_dates, 'Predicted Close Price': future_predictions.flatten()})
+
+    st.table(future_df)
+
+
+    # Add your content for Stock Price Prediction here
+elif selected_option == "Stock News":
+    st.header("Stock News")
+    # Function to get emoji based on sentiment score
+    def get_sentiment_emoji(sentiment):
+        if sentiment > 0:
+            return "😃 (Positive Sentiment)"  # Positive emoji
+        elif sentiment < 0:
+            return "😔 (Negative Sentiment)"  # Negative emoji
+        else:
+            return "😐 (Neutral Sentiment)"  # Neutral emoji
+    today = date.today()
+    stock_list = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "JPM", "JNJ", "NVDA", "V", "NFLX", "AMD", "PYPL", "BAC", "GC", "XOM", "BP", "CVX", "T", "VZ", "TMUS", "DIS", "CRM", "ORCL", "IBM", "GE", "BA", "LUV", "DAL", "AAL", "UBER", "LYFT", "SBUX", "MCD", "KO", "PEP", "WMT", "TGT", "AMT", "PLD", "PSA", "SPG", "INTC", "CSCO", "QCOM", "TXN", "BABA", "PDD", "BIDU", "NTES", "CRM", "SAP", "ASML", "TM", "HMC", "NSANY", "TSM", "MU", "LRCX", "KLAC", "AMAT", "XLNX", "MCHP", "CDNS", "MRVL", "SPOT", "PINS", "TWTR", "SNAP", "SHOP", "WIX", "ZM", "DOCU", "CRM", "ZS", "OKTA", "NET", "ESTC", "SPLK", "NOW", "TEAM", "WORK"]
+    # Get user input
+    user_input = st.selectbox('Select stocks to analyze', stock_list)
+    st.subheader(f"News articles related to {user_input}")
+    # initialize NewsApiClient with your API key
+    newsapi = NewsApiClient(api_key='ac7842b66f1e46d4abfea8cda6e81393')
+
+    # set the date range
+    to_date = datetime.now().strftime('%Y-%m-%d')
+    from_date = (datetime.now() - timedelta(days=29)).strftime('%Y-%m-%d')
+
+    # get the top headlines for the stock symbol from the past 30 days
+    top_headlines = newsapi.get_everything(q=user_input,
+                                           language='en',
+                                           from_param=from_date,
+                                           to=to_date,
+                                           sort_by='relevancy',
+                                           page_size=100)
+    if top_headlines['totalResults'] == 0:
+        st.write('No news articles found')
+    else:
+
+        total_articles = top_headlines["totalResults"]
+        st.write(f'Total {total_articles} articles found')
+        articles_per_page = 5
+        num_of_pages = math.ceil(total_articles/articles_per_page)
+        page_number = st.number_input('Select Page Number', min_value=1, max_value=num_of_pages, value=1, step=1)
+        start_index = (page_number - 1) * articles_per_page
+        end_index = start_index + articles_per_page
+        articles = top_headlines['articles'][start_index:end_index]
+        for i, article in enumerate(articles):
+            st.write('---')
+            st.write(f"**Title:** [{article['title']}]({article['url']})")
+            st.write(f"**Description:** {article['description']}")
+            st.write(f"**Source:** {article['source']['name']}")
+
+            # perform sentiment analysis on the news article
+            analysis = TextBlob(article['description'])
+            sentiment = analysis.sentiment.polarity
+            sentiment_emoji = get_sentiment_emoji(sentiment)
+            st.write(f"**Sentiment:** {sentiment:.2f} {sentiment_emoji}")
+
+        st.write(f"Showing articles {start_index+1} - {end_index} out of {total_articles}")
+
+elif selected_option == "Stock Price Comparison":
+    # Define function to add arrow marks for rapid stock changes
+    def add_arrow_marks(fig, data, percent_change, threshold):
+        # Add up arrows for rapid stock increases
+        up_indices = percent_change[percent_change > threshold].index
+        up_prices = data[percent_change > threshold]
+        fig.add_trace(go.Scatter(x=up_indices, y=up_prices, mode='markers', name='Up', marker=dict(symbol='triangle-up', color='green', size=10)))
+
+        # Add down arrows for rapid stock decreases
+        down_indices = percent_change[percent_change < -threshold].index
+        down_prices = data[percent_change < -threshold]
+        fig.add_trace(go.Scatter(x=down_indices, y=down_prices, mode='markers', name='Down', marker=dict(symbol='triangle-down', color='red', size=10)))
+
+    # Define function to compare multiple stocks
+    def compare_stocks(tickers, start_date, end_date, threshold):
+        data = pd.DataFrame()
+        for ticker in tickers:
+            stock_data = yf.download(ticker, start=start_date, end=end_date)['Close']
+            data[ticker] = stock_data
+
+        # Calculate percentage change in closing prices for the entire data
+        percent_change = data.pct_change() * 100
+
+        fig = go.Figure()
+
+        # Add line traces for each stock
+        for ticker in tickers:
+            fig.add_trace(go.Scatter(x=data.index, y=data[ticker], mode='lines', name=ticker))
+
+            # Add arrow marks for rapid stock changes for each stock
+            add_arrow_marks(fig, data[ticker], percent_change[ticker], threshold)
+
+        # Customize plot layout
+        fig.update_layout(title='Stock Comparison', xaxis_title='Date', yaxis_title='Price')
+        fig.update_xaxes(tickangle=45)
+        fig.update_layout(legend=dict(orientation='h', yanchor='top', y=-0.2))
+
+        # Display plot
+        st.plotly_chart(fig)
+    st.header("Stock Price Comparison")
+    stock_list = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "JPM", "JNJ", "NVDA", "V", "NFLX", "AMD", "PYPL", "BAC", "GC", "XOM", "BP", "CVX", "T", "VZ", "TMUS", "DIS", "CRM", "ORCL", "IBM", "GE", "BA", "LUV", "DAL", "AAL", "UBER", "LYFT", "SBUX", "MCD", "KO", "PEP", "WMT", "TGT", "AMT", "PLD", "PSA", "SPG", "INTC", "CSCO", "QCOM", "TXN", "BABA", "PDD", "BIDU", "NTES", "CRM", "SAP", "ASML", "TM", "HMC", "NSANY", "TSM", "MU", "LRCX", "KLAC", "AMAT", "XLNX", "MCHP", "CDNS", "MRVL", "SPOT", "PINS", "TWTR", "SNAP", "SHOP", "WIX", "ZM", "DOCU", "CRM", "ZS", "OKTA", "NET", "ESTC", "SPLK", "NOW", "TEAM", "WORK"]
+    # Get user input
+    user_input = st.multiselect('Select stocks to analyze', stock_list)
+    # Add date input widgets for start and end dates
+    today = date.today()
+    col1,col2 = st.columns(2)
+    with col1:
+        start = st.date_input("Start date", date(2012, 1, 1), max_value=today)
+    with col2:
+        end = st.date_input("End date", date(2022, 12, 31), max_value=today)
+    submit_button = st.button(label='Compare')
+
+    # If the user has selected stocks and submitted the form, compare them
+    if submit_button and len(user_input) > 1:
+        threshold = st.slider('Threshold for Rapid Stock Changes (%)', min_value=1, max_value=20, value=10)
+        compare_stocks(user_input, start, end, threshold)
+    elif submit_button:
+        st.write('Please select at least two stocks to compare.')
+elif selected_option == "Stock Technical Indicators":
+    st.header("Stock Technical Indicators")
+    # Define function to add technical indicators
+    def add_technical_indicators(data, selected_indicators):
+        for indicator in selected_indicators:
+            if indicator == "Moving average of 20":
+                data['Moving average of 20'] = ta.trend.sma_indicator(data['Close'], window=20)
+            elif indicator == "Moving average of 50":
+                data['Moving average of 50'] = ta.trend.sma_indicator(data['Close'], window=50)
+            elif indicator == "Standard deviation":
+                data['Standard deviation'] = ta.volatility.bollinger_mavg(data['Close'], window=20, fillna=True) - ta.volatility.bollinger_lband(data['Close'], window=20, window_dev=2, fillna=True)
+            elif indicator == "Relative Strength Index":
+                data['Relative Strength Index'] = ta.momentum.rsi(data['Close'], window=14)
+            elif indicator == "Moving average convergence divergence":
+                data['Moving average convergence divergence'] = ta.trend.macd(data['Close'])
+            elif indicator == "Average Directional Index":
+                try:
+                    data['Average Directional Index'] = ta.trend.adx(data['High'], data['Low'], data['Close'], window=14)
+                except ValueError as e:
+                    st.warning(f"Unable to calculate ADX for {data['Ticker'][0]}: {e}")
+                    data.drop(columns=["Average Directional Index"], inplace=True)
+            elif indicator == "Stochastic Oscillator (%K)":
+                data['Stochastic Oscillator (%K)'] = ta.momentum.stoch(data['High'], data['Low'], data['Close'], window=14, smooth_window=3)
+            elif indicator == "Stochastic Oscillator (%D)":
+                data['Stochastic Oscillator (%D)'] = ta.momentum.stoch_signal(data['High'], data['Low'], data['Close'], window=14, smooth_window=3)
+            elif indicator == "Bollinger Bands (bb_bbm)":
+                data['Bollinger Bands (bb_bbm)'] = ta.volatility.bollinger_mavg(data['Close'], window=20)
+            elif indicator == "Bollinger Bands (bb_bbh)":
+                data['Bollinger Bands (bb_bbh)'] = ta.volatility.bollinger_hband(data['Close'], window=20, window_dev=2)
+            elif indicator == "Bollinger Bands (bb_bbl)":
+                data['Bollinger Bands (bb_bbl)'] = ta.volatility.bollinger_lband(data['Close'], window=20, window_dev=2)
+            elif indicator == "Money Flow Index":
+                data['Money Flow Index'] = ta.volume.money_flow_index(data['High'], data['Low'], data['Close'], data['Volume'], window=14)
+
+        return data
+
+    # Define function to retrieve stock data within a specified date range
+    def get_stock_data(ticker, start_date, end_date):
+        stock = yf.Ticker(ticker)
+        df = stock.history(period="1d", start=start_date, end=end_date)
+        df['Ticker'] = ticker  # Add a column for the stock ticker symbol
+        return df
+
+    # Define function to display stock chart with technical indicators
+    def display_stock_chart(ticker, data, selected_indicators):
+        st.subheader(f"Close values for {ticker}")
+        fig = go.Figure(data=go.Scatter(x=data.index, y=data['Close']))
+        st.plotly_chart(fig)
+
+        for indicator in selected_indicators:
+            if indicator == "Moving average of 20":
+                st.subheader(f"Moving average of 20 for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Moving average of 20'], name='SMA20'))
+                st.plotly_chart(fig)
+
+            if indicator == "Moving average of 50":
+                st.subheader(f"Moving average of 50 for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Moving average of 50'], name='SMA50'))
+                st.plotly_chart(fig)
+
+            if indicator == "Standard deviation":
+                st.subheader(f"Standard deviation for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Standard deviation']))
+                st.plotly_chart(fig)
+
+            if indicator == "Relative Strength Index":
+                st.subheader(f"Relative Strength Index (RSI) for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Relative Strength Index']))
+                st.plotly_chart(fig)
+
+            if indicator == "Moving average convergence divergence":
+                st.subheader(f"Moving average convergence divergence (MACD) for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Moving average convergence divergence']))
+                st.plotly_chart(fig)
+
+            if indicator == "Average Directional Index":
+                st.subheader(f"Average Directional Index (ADX) for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Average Directional Index']))
+                st.plotly_chart(fig)
+
+            if indicator == "Stochastic Oscillator (%K)":
+                st.subheader(f"Stochastic Oscillator (%K) for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Stochastic Oscillator (%K)']))
+                st.plotly_chart(fig)
+
+            if indicator == "Stochastic Oscillator (%D)":
+                st.subheader(f"Stochastic Oscillator (%D) for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Stochastic Oscillator (%D)']))
+                st.plotly_chart(fig)
+
+            if indicator == "Bollinger Bands (bb_bbm)":
+                st.subheader(f"Bollinger Bands (bb_bbm) for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Bollinger Bands (bb_bbm)']))
+                st.plotly_chart(fig)
+
+            if indicator == "Bollinger Bands (bb_bbh)":
+                st.subheader(f"Bollinger Bands (bb_bbh) for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Bollinger Bands (bb_bbh)']))
+                st.plotly_chart(fig)
+
+            if indicator == "Bollinger Bands (bb_bbl)":
+                st.subheader(f"Bollinger Bands (bb_bbl) for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Bollinger Bands (bb_bbl)']))
+                st.plotly_chart(fig)
+
+            if indicator == "Money Flow Index":
+                st.subheader(f"Money Flow Index (MFI) for {ticker}")
+                fig = go.Figure(data=go.Scatter(x=data.index, y=data['Money Flow Index']))
+                st.plotly_chart(fig)
+
+    # Define function to export data as CSV file
+    def export_to_csv(data, ticker, selected_indicators):
+        if not selected_indicators:
+            return None
+
+        selected_data = data[['Open', 'Close', 'High', 'Low', 'Volume'] + selected_indicators]
+        csv = selected_data.to_csv(index=True)
+        b64 = base64.b64encode(csv.encode()).decode()
+        href = f'<a href="data:file/csv;base64,{b64}" download="{ticker}_indicators.csv"><button style="background-color: #FF4B4B; color: white; padding: 0.5em 1em; border: none; border-radius: 4px; cursor: pointer;">Download {ticker} Indicators</button></a>'
+        return href
+
+    # Define list of stocks to choose from
+    stock_list = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "JPM", "JNJ", "NVDA", "V", "NFLX", "AMD", "PYPL", "BAC", "GC", "XOM", "BP", "CVX", "T", "VZ", "TMUS", "DIS", "CRM", "ORCL", "IBM", "GE", "BA", "LUV", "DAL", "AAL", "UBER", "LYFT", "SBUX", "MCD", "KO", "PEP", "WMT", "TGT", "AMT", "PLD", "PSA", "SPG", "INTC", "CSCO", "QCOM", "TXN", "BABA", "PDD", "BIDU", "NTES", "CRM", "SAP", "ASML", "TM", "HMC", "NSANY", "TSM", "MU", "LRCX", "KLAC", "AMAT", "XLNX", "MCHP", "CDNS", "MRVL", "SPOT", "PINS", "TWTR", "SNAP", "SHOP", "WIX", "ZM", "DOCU", "CRM", "ZS", "OKTA", "NET", "ESTC", "SPLK", "NOW", "TEAM", "WORK"]
+
+    # Add user input for selecting stocks to analyze
+    selected_stocks = st.multiselect('Select stocks to analyze', stock_list)
+
+    # Add user input for selecting start and end dates
+    today = date.today()
+    col1,col2 = st.columns(2)
+    with col1:
+        start = st.date_input("Start date", date(2012, 1, 1), max_value=today)
+    with col2:
+        end = st.date_input("End date", date(2022, 12, 31), max_value=today)
+
+    # Add multi-select input widget for technical indicators
+    technical_indicators = ["Moving average of 20", "Moving average of 50", "Standard deviation", "Relative Strength Index", "Moving average convergence divergence", "Average Directional Index", "Stochastic Oscillator (%K)", "Stochastic Oscillator (%D)", "Bollinger Bands (bb_bbm)", "Bollinger Bands (bb_bbh)", "Bollinger Bands (bb_bbl)", "Money Flow Index"]
+    selected_indicators = st.multiselect("Select technical indicators to display and download", technical_indicators)
+
+    # If at least one stock is selected, analyze them
+    if selected_stocks:
+        for ticker in selected_stocks:
+            # Retrieve stock data within the specified date range
+            data = get_stock_data(ticker, start, end)
+            # Add technical indicators to the data
+            data = add_technical_indicators(data, selected_indicators)
+            # Display stock chart with selected technical indicators
+            st.write(f"## {ticker} Stock Price with Technical Indicators")
+            display_stock_chart(ticker, data, selected_indicators)
+
+            # Export selected technical indicators as a CSV file and display download button
+            csv_link = export_to_csv(data, ticker, selected_indicators)
+            if csv_link:
+                st.markdown(csv_link, unsafe_allow_html=True)
+    else:
+        st.write('Please select at least one stock to analyze.')
+elif selected_option == "Download Stock Data":
+    st.header("Download Stock Data")
+    # List of available stock tickers
+    stock_tickers = ["AAPL", "GOOGL", "AMZN", "MSFT", "FB", "TSLA", "NVDA", "JPM", "V", "JNJ", "BAC", "WMT", "PG", "HD", "MA", "UNH", "VZ", "XOM", "PFE", "DIS", "CMCSA", "INTC", "NFLX", "KO", "T", "ADBE", "PYPL", "CRM", "PEP", "CSCO", "CVX", "ABBV", "MRK", "WFC", "BA", "COST", "MCD", "ABB", "ACN", "AGN", "AIG", "ALGN", "ALL", "AMD", "AMGN", "AMT", "APD", "AXP", "BABA", "BHP", "BKNG", "BLK", "BP", "BTI", "C", "CAT", "CHL", "CL", "CLX", "CME", "COF", "COP", "CRH", "CSX", "CVS", "D", "DE", "DEO", "DHR", "DUK", "DVA", "DOW", "DSW", "DXC", "EA", "EBAY", "ED", "EMR", "EXC", "F", "FDX", "GD", "GE", "GILD", "GIS", "GS", "HAL", "HDB", "HMC", "HON", "HPQ", "HSBC", "HUM", "IBM", "ING", "ISRG", "ITW", "JCI", "KMB", "KMI", "KOF", "KHC", "KMB", "KR", "LFC", "LIN", "LMT", "LOW", "LULU", "LVMUY", "LYG", "MA", "MAR", "MCD", "MDLZ", "MET", "MMM", "MO", "MON", "MOS", "MRK", "MS", "NEE", "NKE", "NOC", "NVS", "ORCL", "PBR", "PCG", "PDD", "PFE", "PM", "PTR", "PXD", "RDS.A", "RIO", "RJF", "RDS.B", "ROST", "RY", "SAP", "SBUX", "SLB", "SNE", "SNP", "SO", "SQ", "STM", "TGT", "TM", "TMO", "TOT", "TRV", "TSM", "TXN", "UL", "UPS", "USB", "UTX", "UNP", "UN", "VFC", "VLO", "VOD", "VRSN", "VRSK", "VTR", "VFC", "WBA", "WFC", "WFM", "WHR", "WMT", "WRK", "WY", "XEL", "XLNX", "XOM", "XRAY", "ZTS"]
+    # Function to retrieve data from Yahoo Finance
+    def retrieve_data(ticker, start_date, end_date, attributes):
+        data = yf.download(ticker, start=start_date, end=end_date)
+        data = data[attributes]
+        return data
+    # Input fields for data retrieval
+    ticker = st.selectbox("Stock Ticker", stock_tickers)
+    max_start_date = datetime.now().date()
+    # Calculate the maximum end date as today
+    max_end_date = datetime.now().date()
+    col1,col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input("Start Date", max_value=max_start_date)
+    with col2:
+        end_date = st.date_input("End Date", max_value=max_end_date)
+    # Add one day to the end date
+    end_date += timedelta(days=1)
+    attributes = st.multiselect("Attributes", ["Open", "High", "Low", "Close", "Volume","Adj Close"])
+    if st.button("Submit"):
+        # Retrieve data and display
+        data = retrieve_data(ticker, start_date, end_date, attributes)
+         # Plot the data
+        fig = go.Figure()
+
+        for attribute in attributes:
+            fig.add_trace(go.Scatter(x=data.index, y=data[attribute], name=attribute))
+
+        fig.update_layout(title=f"{ticker} Stock Data", xaxis_title="Date", yaxis_title="Value")
+
+        # Display the plot
+        st.plotly_chart(fig)
+        st.write(data)
+        data = data.reset_index()
+        data.rename(columns={'index': 'Date'}, inplace=True)
+        
+        # Offer a download button for the CSV file
+        csv_data = data.to_csv(index=False)
+        csv_filename = f"{ticker}_stock_data.csv"
+        
+        # Create a download button
+        st.download_button(
+            label="Download CSV Data",
+            data=csv_data,
+            file_name=csv_filename,
+            key=f"{csv_filename}-key"
+        )
+    
+elif selected_option == "Stock Revenue Calculator":
+    st.header("Stock Revenue Calculator")
+    # List of available stock tickers
+    stock_tickers = ["AAPL", "GOOGL", "AMZN", "MSFT", "FB", "TSLA", "NVDA", "JPM", "V", "JNJ", "BAC", "WMT", "PG", "HD", "MA", "UNH", "VZ", "XOM", "PFE", "DIS", "CMCSA", "INTC", "NFLX", "KO", "T", "ADBE", "PYPL", "CRM", "PEP", "CSCO", "CVX", "ABBV", "MRK", "WFC", "BA", "COST", "MCD", "ABB", "ACN", "AGN", "AIG", "ALGN", "ALL", "AMD", "AMGN", "AMT", "APD", "AXP", "BABA", "BHP", "BKNG", "BLK", "BP", "BTI", "C", "CAT", "CHL", "CL", "CLX", "CME", "COF", "COP", "CRH", "CSX", "CVS", "D", "DE", "DEO", "DHR", "DUK", "DVA", "DOW", "DSW", "DXC", "EA", "EBAY", "ED", "EMR", "EXC", "F", "FDX", "GD", "GE", "GILD", "GIS", "GS", "HAL", "HDB", "HMC", "HON", "HPQ", "HSBC", "HUM", "IBM", "ING", "ISRG", "ITW", "JCI", "KMB", "KMI", "KOF", "KHC", "KMB", "KR", "LFC", "LIN", "LMT", "LOW", "LULU", "LVMUY", "LYG", "MA", "MAR", "MCD", "MDLZ", "MET", "MMM", "MO", "MON", "MOS", "MRK", "MS", "NEE", "NKE", "NOC", "NVS", "ORCL", "PBR", "PCG", "PDD", "PFE", "PM", "PTR", "PXD", "RDS.A", "RIO", "RJF", "RDS.B", "ROST", "RY", "SAP", "SBUX", "SLB", "SNE", "SNP", "SO", "SQ", "STM", "TGT", "TM", "TMO", "TOT", "TRV", "TSM", "TXN", "UL", "UPS", "USB", "UTX", "UNP", "UN", "VFC", "VLO", "VOD", "VRSN", "VRSK", "VTR", "VFC", "WBA", "WFC", "WFM", "WHR", "WMT", "WRK", "WY", "XEL", "XLNX", "XOM", "XRAY", "ZTS"]
+
+    # Function to calculate the return amount
+    def calculate_amount(ticker, start_date, end_date, invested_amount):
+        data = yf.download(ticker, start=start_date, end=end_date)
+        close_prices = data['Close']
+        start_price = close_prices.iloc[0]
+        end_price = close_prices.iloc[-1]
+        return_amount = calculate_total_return(start_price, end_price, invested_amount)
+        return return_amount
+
+    # Function to calculate total return
+    def calculate_total_return(initial_price, ending_price, initial_investment):
+        total_return = (ending_price / initial_price) - 1
+        total_amount = initial_investment * (1 + total_return)
+        return total_return, total_amount
+    # Input fields for amount calculation
+    ticker = st.selectbox("Stock Ticker", stock_tickers)
+    max_start_date = datetime.now().date()
+    # Calculate the maximum end date as today
+    max_end_date = datetime.now().date()
+    col1,col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input("Start Date", max_value=max_start_date)
+    with col2:
+        end_date = st.date_input("End Date", max_value=max_end_date)
+    # Add one day to the end date
+    end_date += timedelta(days=1)
+    invested_amount = st.number_input("Invested Amount (in dollars)")
+    if st.button("Calculate"):
+        # Calculate and display return amount
+        total_return, return_amount = calculate_amount(ticker, start_date, end_date, invested_amount)
+        profit = return_amount - invested_amount
+        
+        # Determine the CSS class for styling based on profit/loss
+        css_class = "profit" if profit >= 0 else "loss"
+        
+        # Apply CSS styling to the output
+        st.markdown(
+            f'<p class="{css_class}">If you had invested {invested_amount} in {ticker} stock from {start_date} to {end_date}, the investment would be worth {return_amount}.</p>',
+            unsafe_allow_html=True
+        )
+        # Display profit/loss in green or red
+        if profit >= 0:
+            st.markdown(
+                f'<p style="color: green">Your total profit is {profit}.</p>',
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f'<p style="color: red">Your total loss is {abs(profit)}.</p>',
+                unsafe_allow_html=True
+            )
+        # Create a DataFrame for the table
+        data_table = pd.DataFrame({
+            "Stock Ticker": [ticker],
+            "Start Date": [start_date],
+            "End Date": [end_date],
+            "Invested Amount": [invested_amount],
+            "Retrived Amount": [profit]
+        })
+        
+        # Display the table
+        st.write("Summary Table:")
+        st.write(data_table)
+
