@@ -62,11 +62,13 @@ stock price prediction.we have analyzed the other conventional time-series model
 ARIMA compared with our model's performance and
 found that our LSTM model performed well.
 **3-5 Images :**
-![Screenshot 2024-03-15 233301](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/864df978-f7ad-4875-a7b3-35457ea9fcf8) 
-![Screenshot 2024-03-15 232959](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/8feed9b9-93eb-4461-be8d-147a4ae9689b)
-![Screenshot 2024-03-15 233355](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/0f4973b1-7583-4c17-b7fb-9e50cbb4d9dc)
-![Screenshot 2024-03-15 233648](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/da637494-e1a3-4935-ab5d-54c13b941703)
-![Screenshot 2024-03-15 233832](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/279da901-a3e6-4c7f-86df-779d12f975b7)
+![Screenshot 2024-03-15 233832](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/a9111914-442a-4088-8652-9bc61e47bb47)
+![Screenshot 2024-03-15 233648](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/bd87ba77-5df1-4a6d-b8d5-c3d95f04815a)
+![Screenshot 2024-03-15 233355](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/f2f9f3f7-1aeb-459f-9871-55fa9b314d9c)
+![Screenshot 2024-03-15 233301](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/5249e272-6daf-4940-9b17-fd4cd171eb3c)
+![Screenshot 2024-03-15 232959](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/64a38b63-7598-47a0-ad98-c10dc24b6ab9)
+![Screenshot 2024-03-15 232722](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/e4741291-deb8-4589-83b0-8ba04673d4cf)
+
 **Exact steps to test the project:**
 1.Open Anaconda Navigator where the virtual environment of yourproject is created.
 2.Go to the project directory.
