@@ -1,6 +1,6 @@
 ***Algorithm-Avengers--VH053**
-***Title:** "Streamlit Based Stock Forecasting Dashboard"
-**Description:** Stock price prediction is a stimulating and principal task for
+***Title of the project:** "Streamlit Based Stock Forecasting Dashboard"
+**Description and Demo Video Link:** Stock price prediction is a stimulating and principal task for
 investors and traders in financial markets. In this project, we
 developed a multipage Streamlit web application that allows users
 to access and analyze stock data, including stock price prediction,
@@ -21,15 +21,26 @@ compare different stocks' performances the application allows
 users to do a comparison of it. Then at last we have added some
 other feature which is the Time range feature that allows users to
 select certain dates of stock predictions.
-At last, for stock analysis and prediction, our project provides an
-extensive and user-friendly tool, by this, the capitalists and
-traders in making informed decisions in financial markets are
-supported.
+
+https://youtu.be/DOGvXsTRISQ
+
 **Team members details:**
+  ****NAME****     -      ****EMAIL****
   GONDIPALLI  HARI PRYA- gondipalliharipriya@gmail.com
   SHAIK REENA-shaikreena2003@gmail.com
   KORRAPATI MAHENDRA SUNNY GOUD-9921004365@klu.ac.in
   A SREERAM SAGAR -9921004977@klu.ac.in
+,
+ **Problem statement**
+
+**Mention the problem:** Develop a Streamlit-based stock forecasting dashboard equipped with stock price prediction, stock comparison, technical indicators, a stock revenue calculator, and the capability to download stock data. The goal is to provide investors, traders, and financial analysts with a user-friendly platform for comprehensive stock market analysis and informed decision-making.
+ **Mentioning the severity of the problem and why we need solution for that** 
+ There are Limited Stock Comparison Features ,Lack of Technical Indicators,Inefficient Stock Revenue Calculator,Limited Data Download Options
+ , mention which gorup of people face that problem
+ our project provides an
+extensive and user-friendly tool, by this, the capitalists and
+traders in making informed decisions in financial markets are
+supported.
   **The problem it solves:**
   It's a  user-friendly interface for users to access and
 analyze stock data is provided by the system. To access a
@@ -69,7 +80,7 @@ found that our LSTM model performed well.
 ![Screenshot 2024-03-15 232959](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/64a38b63-7598-47a0-ad98-c10dc24b6ab9)
 ![Screenshot 2024-03-15 232722](https://github.com/GONDIPALLIHARIPRIYA/Algorithm-Avengers--VH053/assets/110616145/e4741291-deb8-4589-83b0-8ba04673d4cf)
 **Demo Video Link:**
-https://youtu.be/DOGvXsTRISQ?si=3uivnCxrHqO4dz0p
+
 
 **Exact steps to test the project:**
 1.Open Anaconda Navigator where the virtual environment of yourproject is created.
